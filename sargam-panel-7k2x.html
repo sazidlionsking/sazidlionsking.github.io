@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="hi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>Sargam Panel</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:#0b0b0e;color:#f3f3f6;font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.w{max-width:620px;margin:0 auto;padding:22px 16px 60px}
+h1{font-size:22px;margin:0 0 4px} .sub{color:#9a9aa6;font-size:14px;margin-bottom:20px}
+label{display:block;font-size:13px;color:#9a9aa6;margin:14px 0 5px}
+input,textarea{width:100%;background:#15151b;border:1px solid #2a2a33;border-radius:10px;color:#fff;padding:12px;font:inherit}
+textarea{min-height:110px;resize:vertical}
+input:focus,textarea:focus{outline:2px solid #6cf27a;border-color:transparent}
+.cnt{float:right;color:#6d6d78;font-size:12px}
+button{font:inherit;border:0;border-radius:12px;padding:13px 18px;cursor:pointer}
+.send{background:#6cf27a;color:#06210a;font-weight:700;width:100%;margin-top:18px;font-size:17px}
+.send:disabled{opacity:.5;cursor:default}
+.msg{margin-top:12px;font-size:14px;min-height:20px}
+.ok{color:#6cf27a}.bad{color:#ff6b7a}
+h2{font-size:16px;margin:30px 0 8px;color:#cfcfd8}
+.n{background:#15151b;border:1px solid #2a2a33;border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.n.off{opacity:.45}
+.n b{display:block}.n small{color:#8a8a96}
+.n p{margin:6px 0 8px;white-space:pre-wrap;word-break:break-word}
+.del{background:#2a1a1d;color:#ff8a98;padding:7px 12px;font-size:13px}
+.pw{display:flex;gap:8px}.pw input{flex:1}
+.empty{color:#7a7a86;font-size:14px}
+</style></head><body><div class="w">
+<h1>Sargam Panel</h1>
+<div class="sub">Yahan jo likhoge wo sabke phone pe notification banke jayega (kuch ghanton ke andar).</div>
+
+<label for="us">Username</label>
+<input id="us" autocomplete="off" autocapitalize="none" placeholder="Username">
+<label for="pw">Password</label>
+<div class="pw"><input id="pw" type="password" autocomplete="off" placeholder="Password"><button id="sv" style="background:#23232c;color:#fff">Check</button></div>
+<div class="msg" id="pm"></div>
+
+<label for="ti">Title <span class="cnt" id="c1">0/60</span></label>
+<input id="ti" maxlength="60" placeholder="Jaise: Naya update aa gaya!">
+<label for="tx">Message <span class="cnt" id="c2">0/300</span></label>
+<textarea id="tx" maxlength="300" placeholder="Kya naya hai, chhote mein likho..."></textarea>
+<button class="send" id="go">Sabko bhejo</button>
+<div class="msg" id="m"></div>
+
+<h2>Pehle bheje hue</h2>
+<div id="list"><div class="empty">Password daalke Check dabao.</div></div>
+</div>
+<script>
+var URL_="https://script.google.com/macros/s/AKfycbzl0Gx3E-cpeRUJojiFHZzivLjCZXLSAnJCIR2wYdScor9t5KWLMDrB4Gl3PgRA2d0/exec";
+var $=function(i){return document.getElementById(i)};
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k)||"";localStorage.setItem(k,v)}catch(e){return ""}}
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function say(el,t,ok){el.textContent=t;el.className="msg "+(ok?"ok":"bad")}
+$("pw").value=ls("sgp");$("us").value=ls("sgu");
+function cnt(){$("c1").textContent=$("ti").value.length+"/60";$("c2").textContent=$("tx").value.length+"/300"}
+$("ti").oninput=$("tx").oninput=cnt;
+
+function load(){
+  var k=$("pw").value.trim(),u=$("us").value.trim();
+  if(!k||!u){say($("pm"),"Pehle username aur password daalo.",0);return Promise.resolve()}
+  return fetch(URL_+"?action=nlist&user="+encodeURIComponent(u)+"&key="+encodeURIComponent(k)+"&t="+Date.now()).then(function(r){return r.json()}).then(function(j){
+    if(j.error){say($("pm"),"Username ya password galat hai.",0);$("list").innerHTML='<div class="empty">Username ya password galat hai.</div>';return}
+    ls("sgp",k);ls("sgu",u);say($("pm"),"Login sahi hai.",1);
+    var a=(j.notices||[]).slice().reverse();
+    $("list").innerHTML=a.length?a.map(function(n){
+      return '<div class="n'+(n.active?'':' off')+'"><b>'+esc(n.title)+'</b><p>'+esc(n.text)+'</p><small>'+esc(n.date)+(n.active?'':' · hata diya')+'</small>'+
+        (n.active?' <button class="del" data-id="'+n.id+'">Hatao</button>':'')+'</div>'}).join(""):'<div class="empty">Abhi tak kuch nahi bheja.</div>';
+  }).catch(function(){say($("pm"),"Internet ya link ki dikkat. Dobara try karo.",0)})
+}
+function post(o){return fetch(URL_,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(o)})}
+$("sv").onclick=load;
+$("go").onclick=function(){
+  var k=$("pw").value.trim(),u=$("us").value.trim(),t=$("ti").value.trim(),x=$("tx").value.trim();
+  if(!k||!u){say($("m"),"Username aur password daalo.",0);return}
+  if(!t||!x){say($("m"),"Title aur message dono likho.",0);return}
+  if(!confirm("Ye sabke phone pe jayega:\n\n"+t+"\n"+x+"\n\nPakka bhejna hai?"))return;
+  $("go").disabled=true;say($("m"),"Bhej raha hoon...",1);
+  post({kind:"notice",user:u,key:k,title:t,text:x}).then(function(){
+    setTimeout(function(){load().then(function(){
+      $("go").disabled=false;
+      if($("list").textContent.indexOf(t)>-1){say($("m"),"Bhej diya! Sabke phone pe kuch ghanton mein aayega.",1);$("ti").value="";$("tx").value="";cnt()}
+      else say($("m"),"Pakka nahi hua. Username ya password galat ho sakta hai, dobara Check dabake dekho.",0)})},2500)
+  }).catch(function(){$("go").disabled=false;say($("m"),"Nahi gaya. Internet check karo.",0)})
+};
+$("list").onclick=function(e){
+  var b=e.target.closest(".del");if(!b)return;
+  if(!confirm("Ye notice hata dein? (Jinhe aa chuka hai unke phone se nahi hatega.)"))return;
+  b.disabled=true;
+  post({kind:"notice",user:$("us").value.trim(),key:$("pw").value.trim(),op:"del",id:b.getAttribute("data-id")}).then(function(){setTimeout(load,2000)})
+};
+if($("pw").value&&$("us").value)load();
+</script></body></html>
