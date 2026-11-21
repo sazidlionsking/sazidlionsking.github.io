@@ -30,9 +30,9 @@ h2{font-size:16px;margin:30px 0 8px;color:#cfcfd8}
 <div class="sub">Yahan jo likhoge wo sabke phone pe notification banke jayega (kuch ghanton ke andar).</div>
 
 <label for="us">Username</label>
-<input id="us" autocomplete="off" autocapitalize="none" placeholder="Username">
+<input id="us" name="username" autocomplete="username" autocapitalize="none" placeholder="Username">
 <label for="pw">Password</label>
-<div class="pw"><input id="pw" type="password" autocomplete="off" placeholder="Password"><button id="sv" style="background:#23232c;color:#fff">Check</button></div>
+<div class="pw"><input id="pw" name="password" type="password" autocomplete="current-password" placeholder="Password"><button id="sv" style="background:#23232c;color:#fff">Check</button></div>
 <div class="msg" id="pm"></div>
 
 <label for="ti">Title <span class="cnt" id="c1">0/60</span></label>
@@ -51,7 +51,7 @@ var $=function(i){return document.getElementById(i)};
 function ls(k,v){try{if(v===undefined)return localStorage.getItem(k)||"";localStorage.setItem(k,v)}catch(e){return ""}}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function say(el,t,ok){el.textContent=t;el.className="msg "+(ok?"ok":"bad")}
-$("pw").value=ls("sgp");$("us").value=ls("sgu");
+
 function cnt(){$("c1").textContent=$("ti").value.length+"/60";$("c2").textContent=$("tx").value.length+"/300"}
 $("ti").oninput=$("tx").oninput=cnt;
 
@@ -60,7 +60,7 @@ function load(){
   if(!k||!u){say($("pm"),"Pehle username aur password daalo.",0);return Promise.resolve()}
   return fetch(URL_+"?action=nlist&user="+encodeURIComponent(u)+"&key="+encodeURIComponent(k)+"&t="+Date.now()).then(function(r){return r.json()}).then(function(j){
     if(j.error){say($("pm"),"Username ya password galat hai.",0);$("list").innerHTML='<div class="empty">Username ya password galat hai.</div>';return}
-    ls("sgp",k);ls("sgu",u);say($("pm"),"Login sahi hai.",1);
+    say($("pm"),"Login sahi hai.",1);
     var a=(j.notices||[]).slice().reverse();
     $("list").innerHTML=a.length?a.map(function(n){
       return '<div class="n'+(n.active?'':' off')+'"><b>'+esc(n.title)+'</b><p>'+esc(n.text)+'</p><small>'+esc(n.date)+(n.active?'':' · hata diya')+'</small>'+
@@ -88,5 +88,5 @@ $("list").onclick=function(e){
   b.disabled=true;
   post({kind:"notice",user:$("us").value.trim(),key:$("pw").value.trim(),op:"del",id:b.getAttribute("data-id")}).then(function(){setTimeout(load,2000)})
 };
-if($("pw").value&&$("us").value)load();
+try{localStorage.removeItem("sgp");localStorage.removeItem("sgu")}catch(e){}
 </script></body></html>
